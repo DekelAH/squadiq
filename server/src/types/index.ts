@@ -11,6 +11,7 @@ export type MatchStatus = 'in_progress' | 'ended'
 // ─── AI Analysis ──────────────────────────────────────────────────────────────
 
 export interface AIAnalysis {
+
     summary: string
     mvp: string
     topMedic: string
@@ -20,9 +21,21 @@ export interface AIAnalysis {
     tacticalTip: string
 }
 
+// ─── User ────────────────────────────────────────────────────────────────────
+
+export interface IUser {
+
+    _id: Types.ObjectId
+    username: string
+    passwordHash: string
+    role: 'admin' | 'user'
+    refreshToken?: string
+}
+
 // ─── Match ────────────────────────────────────────────────────────────────────
 
 export interface IMatch {
+
     _id: Types.ObjectId
     serverId: string
     map: string
@@ -38,6 +51,7 @@ export interface IMatch {
 // ─── Player ───────────────────────────────────────────────────────────────────
 
 export interface IPlayer {
+
     _id: Types.ObjectId
     steamId: string
     username: string
@@ -51,6 +65,7 @@ export interface IPlayer {
 // ─── Events ───────────────────────────────────────────────────────────────────
 
 export interface KillPayload {
+
     killerId: string
     killerName: string
     victimId: string
@@ -60,6 +75,7 @@ export interface KillPayload {
 }
 
 export interface RevivePayload {
+
     medicId: string
     medicName: string
     targetId: string
@@ -68,11 +84,13 @@ export interface RevivePayload {
 }
 
 export interface CapturePayload {
+
     flagName: string
     teamId: TeamId
 }
 
 export interface IEvent {
+
     _id: Types.ObjectId
     matchId: Types.ObjectId
     type: EventType
@@ -83,6 +101,7 @@ export interface IEvent {
 // ─── Leaderboard ──────────────────────────────────────────────────────────────
 
 export interface LeaderboardEntry {
+
     steamId: string
     username: string
     teamId: TeamId
