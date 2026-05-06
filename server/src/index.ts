@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser'
 import rateLimit from 'express-rate-limit'
 import { connectDB } from './config/db'
 import { env } from './config/env'
+import { startSimulator } from './simulator'
 
 
 const app = express()
@@ -33,6 +34,11 @@ app.get('/api/health', (_req, res) => {
 
 async function start() {
     await connectDB()
+    
+    if (env.DEMO_MODE) {
+        startSimulator()
+    }
+
     server.listen(env.PORT, () => {
         console.log(`Server running on port ${env.PORT}`)
     })
