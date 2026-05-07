@@ -1,7 +1,5 @@
 import eventBus from "../events/EventBus"
 import Match from "../models/Match"
-import Player from "../models/Player"
-import { env } from "../config/env"
 import { startPersisting } from "../events/EventPersister"
 import { TeamId } from "../types"
 
