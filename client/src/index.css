@@ -4,16 +4,16 @@
 
 @layer base {
   body {
-    @apply bg-surface-900 text-slate-100 font-sans;
+    @apply bg-surface text-slate-100 font-sans;
   }
 
   ::-webkit-scrollbar {
     width: 6px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-surface-800;
+    @apply bg-surface-1;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-surface-600 rounded-full;
+    @apply bg-surface-3 rounded-full;
   }
 }

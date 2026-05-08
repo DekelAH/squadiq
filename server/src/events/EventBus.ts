@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import { AIAnalysis, CapturePayload, KillPayload, MatchStatus, RevivePayload, TeamId } from '../types'
 
-interface IEventPayloads {
+export interface IEventPayloads {
 
     'match:start': {
 

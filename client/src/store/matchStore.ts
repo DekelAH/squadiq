@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import { IEvent, IMatch, Leaderboard } from '../types'
 
 interface MatchState {
@@ -11,14 +12,22 @@ interface MatchState {
     setLeaderboard: (entries: Leaderboard) => void
 }
 
-export const useMatchStore = create<MatchState>((set) => ({
-
-    currentMatch: null,
-    events: [],
-    leaderboard: [],
-    setMatch: (match) => set({ currentMatch: match }),
-    addEvent: (event) => set((state) => ({
-        events: [event, ...state.events].slice(0, 50)
-    })),
-    setLeaderboard: (entries) => set({ leaderboard: entries })
-}))
+export const useMatchStore = create<MatchState>()(
+    persist(
+        (set) => ({
+            currentMatch: null,
+            events: [],
+            leaderboard: [],
+            setMatch: (match) => set({ currentMatch: match }),
+            addEvent: (event) => set((state) => ({
+                events: [event, ...state.events].slice(0, 50)
+            })),
+            setLeaderboard: (entries) => set({ leaderboard: entries })
+        }),
+        {
+            name: 'squadiq-match',
+            storage: createJSONStorage(() => sessionStorage),
+            partialize: (state) => ({ currentMatch: state.currentMatch, events: state.events })
+        }
+    )
+)
