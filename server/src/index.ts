@@ -1,20 +1,24 @@
 import 'dotenv/config'
 import express from 'express'
 import { createServer } from 'http'
+
 import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import rateLimit from 'express-rate-limit'
+
 import { connectDB } from './config/db'
 import { env } from './config/env'
+
 import { startSimulator } from './simulator'
-import { attachSocket } from './socket'
+import { attachSocket, io } from './socket'
 
 import authRouter from './routes/auth'
 import matchesRouter from './routes/matches'
 import playersRouter from './routes/players'
 import serversRouter from './routes/servers'
+import { initAIService } from './services/AIService'
 
 
 const app = express()
@@ -44,6 +48,7 @@ app.use('/api/players', playersRouter)
 app.use('/api/servers', serversRouter)
 
 attachSocket(server)
+initAIService(io)
 
 async function start() {
     await connectDB()
