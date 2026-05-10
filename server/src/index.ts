@@ -11,6 +11,11 @@ import { env } from './config/env'
 import { startSimulator } from './simulator'
 import { attachSocket } from './socket'
 
+import authRouter from './routes/auth'
+import matchesRouter from './routes/matches'
+import playersRouter from './routes/players'
+import serversRouter from './routes/servers'
+
 
 const app = express()
 const server = createServer(app)
@@ -32,6 +37,11 @@ app.use(rateLimit({
 app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok' })
 })
+
+app.use('/api/auth', authRouter)
+app.use('/api/matches', matchesRouter)
+app.use('/api/players', playersRouter)
+app.use('/api/servers', serversRouter)
 
 attachSocket(server)
 
