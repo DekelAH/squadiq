@@ -10,7 +10,7 @@ export const api: AxiosInstance = axios.create({
 
 
 api.interceptors.response.use(
-    
+
     (res) => res,
     async (err) => {
         if (err.response?.status === 401) {
@@ -24,7 +24,7 @@ api.interceptors.response.use(
                 useAuthStore.getState().logout()
             }
         }
-        
+
         return Promise.reject(err)
     }
 )

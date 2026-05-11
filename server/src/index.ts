@@ -11,13 +11,13 @@ import rateLimit from 'express-rate-limit'
 import { connectDB } from './config/db'
 import { env } from './config/env'
 
-import { startSimulator } from './simulator'
 import { attachSocket, io } from './socket'
 
 import authRouter from './routes/auth'
 import matchesRouter from './routes/matches'
 import playersRouter from './routes/players'
 import serversRouter from './routes/servers'
+import simulatorRouter from './routes/simulator'
 import { initAIService } from './services/AIService'
 
 
@@ -46,6 +46,7 @@ app.use('/api/auth', authRouter)
 app.use('/api/matches', matchesRouter)
 app.use('/api/players', playersRouter)
 app.use('/api/servers', serversRouter)
+app.use('/api/simulator', simulatorRouter)
 
 attachSocket(server)
 initAIService(io)
@@ -53,9 +54,7 @@ initAIService(io)
 async function start() {
     await connectDB()
     
-    if (env.DEMO_MODE) {
-        startSimulator()
-    }
+    void env.DEMO_MODE
 
     server.listen(env.PORT, () => {
         console.log(`Server running on port ${env.PORT}`)

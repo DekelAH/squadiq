@@ -1,6 +1,8 @@
 import { Server } from "socket.io"
 import eventBus from "../events/EventBus"
 import { IEventPayloads } from "../events/EventBus"
+import Event from "../models/Event"
+import Match from "../models/Match"
 
 type MatchStartPayload = IEventPayloads['match:start']
 
@@ -11,10 +13,18 @@ export function registerHandlers(io: Server) : void {
 
     io.on('connection', (socket) => {
 
-        socket.on('server:subscribe', (serverId: string) => {
+        socket.on('server:subscribe', async (serverId: string) => {
             socket.join(serverId)
             if (currentMatchSnapshot && currentMatchSnapshot.serverId === serverId) {
-                socket.emit('match:start', currentMatchSnapshot)
+
+                const match = await Match.findById(currentMatchSnapshot._id)
+                const events = await Event.find({ matchId: currentMatchSnapshot._id }).sort({ timestamp: 1 })
+
+                socket.emit('match:snapshot', {
+                    match: currentMatchSnapshot,
+                    events,
+                    tickets: match?.tickets ?? currentMatchSnapshot.tickets,
+                })
             }
         })
     })
@@ -38,6 +48,11 @@ export function registerHandlers(io: Server) : void {
     eventBus.on('event:capture', (payload) => {
         
         io.to(currentServerId).emit('event:capture', payload)
+    })
+
+    eventBus.on('tickets:update', (payload) => {
+
+        io.to(currentServerId).emit('tickets:update', payload)
     })
 
     eventBus.on('match:end', (payload) => {

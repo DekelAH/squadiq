@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useMatchStore } from '../store/matchStore'
-import { LeaderboardEntry } from '../types'
+import { IEvent, LeaderboardEntry } from '../types'
 
 type SortKey = 'kills' | 'deaths' | 'revives' | 'kd'
 
-function buildLeaderboard(events: ReturnType<typeof useMatchStore.getState>['events']): LeaderboardEntry[] {
+function buildLeaderboard(events: IEvent[]): LeaderboardEntry[] {
     const map = new Map<string, LeaderboardEntry>()
 
     for (const event of events) {
@@ -37,8 +37,13 @@ function buildLeaderboard(events: ReturnType<typeof useMatchStore.getState>['eve
     }))
 }
 
-export default function Leaderboard() {
-    const { events } = useMatchStore()
+interface LeaderboardProps {
+    events?: IEvent[]
+}
+
+export default function Leaderboard({ events: propEvents }: LeaderboardProps = {}) {
+    const storeEvents = useMatchStore(s => s.events)
+    const events = propEvents ?? storeEvents
     const [sortKey, setSortKey] = useState<SortKey>('kills')
 
     const entries = buildLeaderboard(events).sort((a, b) => b[sortKey] - a[sortKey])

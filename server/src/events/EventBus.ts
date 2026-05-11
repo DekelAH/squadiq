@@ -27,7 +27,8 @@ export interface IEventPayloads {
     },
     'event:kill': KillPayload,
     'event:revive': RevivePayload,
-    'event:capture': CapturePayload
+    'event:capture': CapturePayload,
+    'tickets:update': { team1: number; team2: number }
 }
 
 class EventBus extends EventEmitter {

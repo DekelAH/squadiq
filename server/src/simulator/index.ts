@@ -29,7 +29,16 @@ const players: { steamId: string, username: string, teamId: TeamId }[] = [
 
 const weapons: string[] = ['AK-47', 'M-16', 'AKS', 'M-4', 'EF-88', 'RPK', 'QBZ', 'AK-12']
 
+let isRunning = false
+
+export function isSimulatorRunning(): boolean {
+    return isRunning
+}
+
 export async function startSimulator() {
+
+    if (isRunning) return
+    isRunning = true
 
     const randomMap = randomFrom(maps)
     const match = new Match({
@@ -38,7 +47,7 @@ export async function startSimulator() {
         layer: randomMap.layer,
         status: 'in_progress',
         startedAt: new Date(),
-        tickets: { team1: 300, team2: 300 }
+        tickets: { team1: 100, team2: 100 }
     })
     await match.save()
     startPersisting(match._id.toString())
@@ -53,6 +62,8 @@ export async function startSimulator() {
         tickets: match.tickets
     })
 
+    const deadPlayers: { steamId: string, username: string, teamId: TeamId }[] = []
+
     const interval = setInterval(async () => {
 
         let roll = Math.random()
@@ -61,8 +72,14 @@ export async function startSimulator() {
             const killerTeam: TeamId = Math.random() < 0.5 ? 1 : 2
             const victimTeam: TeamId = killerTeam === 1 ? 2 : 1
 
+            const aliveVictims = players.filter(p =>
+                p.teamId === victimTeam &&
+                !deadPlayers.some(d => d.steamId === p.steamId)
+            )
+            if (aliveVictims.length === 0) return
+
             const killer = randomFrom(players.filter(p => p.teamId === killerTeam))
-            const victim = randomFrom(players.filter(p => p.teamId === victimTeam))
+            const victim = randomFrom(aliveVictims)
             let weapon = randomFrom(weapons)
 
             eventBus.emit('event:kill', {
@@ -75,16 +92,21 @@ export async function startSimulator() {
                 teamId: killerTeam
             })
 
+            deadPlayers.push(victim)
             if (victimTeam === 1) {
                 match.tickets.team1 -= 1
             } else {
                 match.tickets.team2 -= 1
             }
+            eventBus.emit('tickets:update', { team1: match.tickets.team1, team2: match.tickets.team2 })
         } else if (roll < 0.85) {
 
-            const randomTeam: TeamId = Math.random() < 0.5 ? 1 : 2
-            const medic = randomFrom(players.filter(p => p.teamId === randomTeam))
-            const target = randomFrom(players.filter(p => p.teamId === randomTeam))
+            if (deadPlayers.length === 0) return
+
+            const target = deadPlayers.shift()!
+            const medic = randomFrom(players.filter(p =>
+                p.teamId === target.teamId && p.steamId !== target.steamId
+            ))
 
             eventBus.emit('event:revive', {
 
@@ -92,7 +114,7 @@ export async function startSimulator() {
                 medicName: medic.username,
                 targetId: target.steamId,
                 targetName: target.username,
-                teamId: randomTeam
+                teamId: target.teamId
             })
         } else {
 
@@ -108,6 +130,9 @@ export async function startSimulator() {
         if (match.tickets.team1 <= 0 || match.tickets.team2 <= 0) {
             clearInterval(interval)
             match.status = 'ended'
+            match.winner = match.tickets.team1 <= 0 ? 2 : 1
+            match.endedAt = new Date()
+            match.markModified('tickets')
             await match.save()
             eventBus.emit('match:end', {
 
@@ -115,15 +140,15 @@ export async function startSimulator() {
                 serverId: match.serverId,
                 map: match.map,
                 layer: match.layer,
-                winner: match.tickets.team1 <= 0 ? 2 : 1,
+                winner: match.winner,
                 status: match.status,
-                endedAt: new Date(),
+                endedAt: match.endedAt,
                 tickets: match.tickets
             })
 
-            startSimulator()
+            isRunning = false
         }
-    }, 3000)
+    }, 1500)
 }
 
 function randomFrom<T>(arr: T[]): T {

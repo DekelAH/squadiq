@@ -1,11 +1,11 @@
-import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
 import { Server } from 'socket.io'
 import eventBus from '../events/EventBus'
 import Match from '../models/Match'
 import Player from '../models/Player'
 import { env } from '../config/env'
 
-const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY })
+const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY })
 
 export function initAIService(io: Server) {
 
@@ -22,28 +22,31 @@ export function initAIService(io: Server) {
 
         try {
             const prompt = `You are a military tactics analyst for the game Squad.
-                            Match: ${match.map} - ${match.layer}
-                            Winner: Team ${match.winner}
-                            Tickets remaining - Team 1: ${match.tickets.team1}, Team 2: ${match.tickets.team2}
-                            
-                            Player stats:
-                            ${playerStats}
-                            
-                            Respond in JSON with these fields: summary, mvp, topMedic, turningPoint, team1Strengths, team2Weaknesses, tacticalTip`
+Match: ${match.map} - ${match.layer}
+Winner: Team ${match.winner}
+Tickets remaining - Team 1: ${match.tickets.team1}, Team 2: ${match.tickets.team2}
 
-            const response = await openai.chat.completions.create({
-                model: env.OPENAI_MODEL,
+Player stats:
+${playerStats}
+
+Respond ONLY with a raw JSON object (no markdown, no code fences) with exactly these fields:
+summary, mvp, topMedic, turningPoint, team1Strengths, team2Weaknesses, tacticalTip`
+
+            const response = await anthropic.messages.create({
+                model: env.CLAUDE_MODEL,
+                max_tokens: 1024,
                 messages: [{ role: 'user', content: prompt }],
-                response_format: { type: 'json_object' }
             })
 
-            const analysis = JSON.parse(response.choices[0].message.content ?? '{}')
+            const text = response.content[0].type === 'text' ? response.content[0].text : '{}'
+            const analysis = JSON.parse(text)
+
             match.aiAnalysis = analysis
             await match.save()
 
             io.emit('match:analysis_ready', { matchId: match._id, analysis })
         } catch (err) {
-            console.error('Couldnt create AI analysis', err)
+            console.error('AI analysis failed:', err)
         }
     })
 }

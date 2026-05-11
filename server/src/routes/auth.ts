@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import User from '../models/User'
 import { env } from '../config/env'
+import { requireAuth, AuthRequest } from '../middleware/auth'
 
 const cookieOptions = {
 
@@ -121,6 +122,10 @@ router.post('/logout', async (req: Request, res: Response): Promise<void> => {
         res.clearCookie('refreshToken')
         res.status(200).json({ ok: true })
     }
+})
+
+router.get('/me', requireAuth, (req: AuthRequest, res: Response) => {
+    res.status(200).json({ username: req.user!.username, role: req.user!.role })
 })
 
 export default router

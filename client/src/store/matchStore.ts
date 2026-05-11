@@ -9,7 +9,9 @@ interface MatchState {
     leaderboard: Leaderboard
     setMatch: (match: IMatch) => void
     addEvent: (event: IEvent) => void
+    setEvents: (events: IEvent[]) => void
     setLeaderboard: (entries: Leaderboard) => void
+    clearEvents: () => void
 }
 
 export const useMatchStore = create<MatchState>()(
@@ -20,9 +22,11 @@ export const useMatchStore = create<MatchState>()(
             leaderboard: [],
             setMatch: (match) => set({ currentMatch: match }),
             addEvent: (event) => set((state) => ({
-                events: [event, ...state.events].slice(0, 50)
+                events: [event, ...state.events].slice(0, 200)
             })),
-            setLeaderboard: (entries) => set({ leaderboard: entries })
+            setEvents: (events) => set({ events }),
+            setLeaderboard: (entries) => set({ leaderboard: entries }),
+            clearEvents: () => set({ events: [] })
         }),
         {
             name: 'squadiq-match',
