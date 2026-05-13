@@ -5,33 +5,33 @@ import { IEvent, LeaderboardEntry } from '../types'
 type SortKey = 'kills' | 'deaths' | 'revives' | 'kd'
 
 function buildLeaderboard(events: IEvent[]): LeaderboardEntry[] {
-    const map = new Map<string, LeaderboardEntry>()
+    const leaderBoardMap = new Map<string, LeaderboardEntry>()
 
     for (const event of events) {
         if (event.type === 'kill') {
             const p = event.payload as { killerId: string; killerName: string; victimId: string; victimName: string; teamId: 1 | 2 }
 
-            if (!map.has(p.killerId)) {
-                map.set(p.killerId, { steamId: p.killerId, username: p.killerName, teamId: p.teamId, kills: 0, deaths: 0, revives: 0, kd: 0 })
+            if (!leaderBoardMap.has(p.killerId)) {
+                leaderBoardMap.set(p.killerId, { steamId: p.killerId, username: p.killerName, teamId: p.teamId, kills: 0, deaths: 0, revives: 0, kd: 0 })
             }
-            if (!map.has(p.victimId)) {
-                map.set(p.victimId, { steamId: p.victimId, username: p.victimName, teamId: p.teamId === 1 ? 2 : 1, kills: 0, deaths: 0, revives: 0, kd: 0 })
+            if (!leaderBoardMap.has(p.victimId)) {
+                leaderBoardMap.set(p.victimId, { steamId: p.victimId, username: p.victimName, teamId: p.teamId === 1 ? 2 : 1, kills: 0, deaths: 0, revives: 0, kd: 0 })
             }
 
-            map.get(p.killerId)!.kills++
-            map.get(p.victimId)!.deaths++
+            leaderBoardMap.get(p.killerId)!.kills++
+            leaderBoardMap.get(p.victimId)!.deaths++
         }
 
         if (event.type === 'revive') {
             const p = event.payload as { medicId: string; medicName: string; teamId: 1 | 2 }
-            if (!map.has(p.medicId)) {
-                map.set(p.medicId, { steamId: p.medicId, username: p.medicName, teamId: p.teamId, kills: 0, deaths: 0, revives: 0, kd: 0 })
+            if (!leaderBoardMap.has(p.medicId)) {
+                leaderBoardMap.set(p.medicId, { steamId: p.medicId, username: p.medicName, teamId: p.teamId, kills: 0, deaths: 0, revives: 0, kd: 0 })
             }
-            map.get(p.medicId)!.revives++
+            leaderBoardMap.get(p.medicId)!.revives++
         }
     }
 
-    return Array.from(map.values()).map(p => ({
+    return Array.from(leaderBoardMap.values()).map(p => ({
         ...p,
         kd: p.deaths === 0 ? p.kills : parseFloat((p.kills / p.deaths).toFixed(2))
     }))
@@ -42,6 +42,7 @@ interface LeaderboardProps {
 }
 
 export default function Leaderboard({ events: propEvents }: LeaderboardProps = {}) {
+
     const storeEvents = useMatchStore(s => s.events)
     const events = propEvents ?? storeEvents
     const [sortKey, setSortKey] = useState<SortKey>('kills')
@@ -49,6 +50,7 @@ export default function Leaderboard({ events: propEvents }: LeaderboardProps = {
     const entries = buildLeaderboard(events).sort((a, b) => b[sortKey] - a[sortKey])
 
     const cols: { key: SortKey; label: string }[] = [
+
         { key: 'kills', label: 'K' },
         { key: 'deaths', label: 'D' },
         { key: 'revives', label: 'R' },

@@ -16,9 +16,7 @@ export function initAIService(io: Server) {
 
         const players = await Player.find({ matchId: payload._id })
 
-        const playerStats = players.map(p =>
-            `${p.username} (Team ${p.teamId}): ${p.kills} kills, ${p.deaths} deaths, ${p.revives} revives`
-        ).join('\n')
+        const playerStats = players.map(p => `${p.username} (Team ${p.teamId}): ${p.kills} kills, ${p.deaths} deaths, ${p.revives} revives`).join('\n')
 
         try {
             const prompt = `You are a military tactics analyst for the game Squad.

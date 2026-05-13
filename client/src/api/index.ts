@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/authStore'
 
 export const api: AxiosInstance = axios.create({
 
-    baseURL: '/api',
+    baseURL: `${import.meta.env.VITE_API_URL ?? ''}/api`,
     withCredentials: true
 })
 
@@ -13,7 +13,9 @@ api.interceptors.response.use(
 
     (res) => res,
     async (err) => {
-        if (err.response?.status === 401) {
+        const isRefreshCall = err.config?.url?.includes('/auth/refresh')
+
+        if (err.response?.status === 401 && !isRefreshCall) {
             try {
 
                 await api.post('/auth/refresh')

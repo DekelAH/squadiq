@@ -148,7 +148,7 @@ export async function startSimulator() {
 
             isRunning = false
         }
-    }, 1500)
+    }, 500)
 }
 
 function randomFrom<T>(arr: T[]): T {

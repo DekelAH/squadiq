@@ -5,6 +5,7 @@ import { startSimulator, isSimulatorRunning } from '../simulator'
 const router = Router()
 
 router.get('/status', (_req, res: Response) => {
+    
     res.json({ running: isSimulatorRunning() })
 })
 

@@ -9,11 +9,12 @@ export function useSocket() {
 
     useEffect(() => {
 
-        const socket = io({ withCredentials: true })
+        const socket = io(import.meta.env.VITE_API_URL ?? '', { withCredentials: true })
 
         socket.emit('server:subscribe', 'demo-server-1')
 
         socket.on('match:start', (payload) => {
+
             const prevMatch = useMatchStore.getState().currentMatch
             if (!prevMatch || prevMatch._id !== payload._id) {
                 useMatchStore.getState().clearEvents()
@@ -30,6 +31,7 @@ export function useSocket() {
         })
 
         socket.on('match:snapshot', (payload: { match: IMatch; events: IEvent[]; tickets: { team1: number; team2: number } }) => {
+            
             useMatchStore.getState().setMatch(payload.match)
             useMatchStore.getState().setEvents(payload.events.slice().reverse())
             useServerStore.getState().setServerStatus({

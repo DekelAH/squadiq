@@ -9,7 +9,7 @@ const cookieOptions = {
 
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
-    sameSite: 'strict' as const
+    sameSite: (env.NODE_ENV === 'production' ? 'none' : 'strict') as 'none' | 'strict',
 }
 
 function signTokens(user: { _id: any; username: string; role: string }) {
