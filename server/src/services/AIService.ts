@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { Server } from 'socket.io'
 import eventBus from '../events/EventBus'
 import Match from '../models/Match'
-import Player from '../models/Player'
+import Event from '../models/Event'
 import { env } from '../config/env'
 
 const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY })
@@ -14,9 +14,27 @@ export function initAIService(io: Server) {
         const match = await Match.findById(payload._id)
         if (!match) return
 
-        const players = await Player.find({ matchId: payload._id })
+        const events = await Event.find({ matchId: payload._id })
 
-        const playerStats = players.map(p => `${p.username} (Team ${p.teamId}): ${p.kills} kills, ${p.deaths} deaths, ${p.revives} revives`).join('\n')
+        const statsMap: Record<string, { username: string; teamId: number; kills: number; deaths: number; revives: number }> = {}
+
+        for (const ev of events) {
+            if (ev.type === 'kill') {
+                const { killerId, killerName, victimId, victimName, teamId } = ev.payload as any
+                if (!statsMap[killerId]) statsMap[killerId] = { username: killerName, teamId, kills: 0, deaths: 0, revives: 0 }
+                if (!statsMap[victimId]) statsMap[victimId] = { username: victimName, teamId: teamId === 1 ? 2 : 1, kills: 0, deaths: 0, revives: 0 }
+                statsMap[killerId].kills++
+                statsMap[victimId].deaths++
+            } else if (ev.type === 'revive') {
+                const { medicId, medicName, teamId } = ev.payload as any
+                if (!statsMap[medicId]) statsMap[medicId] = { username: medicName, teamId, kills: 0, deaths: 0, revives: 0 }
+                statsMap[medicId].revives++
+            }
+        }
+
+        const playerStats = Object.values(statsMap)
+            .map(p => `${p.username} (Team ${p.teamId}): ${p.kills} kills, ${p.deaths} deaths, ${p.revives} revives`)
+            .join('\n')
 
         try {
             const prompt = `You are a military tactics analyst for the game Squad.

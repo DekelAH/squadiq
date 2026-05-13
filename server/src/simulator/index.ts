@@ -47,7 +47,7 @@ export async function startSimulator() {
         layer: randomMap.layer,
         status: 'in_progress',
         startedAt: new Date(),
-        tickets: { team1: 100, team2: 100 }
+        tickets: { team1: 50, team2: 50 }
     })
     await match.save()
     startPersisting(match._id.toString())

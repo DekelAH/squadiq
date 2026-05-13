@@ -4,7 +4,7 @@ interface TicketBarProps {
     max?: number
 }
 
-export default function TicketBar({ team, current, max = 300 }: TicketBarProps) {
+export default function TicketBar({ team, current, max = 50 }: TicketBarProps) {
     const pct = Math.max(0, Math.min(100, (current / max) * 100))
     const isTeam1 = team === 1
 
