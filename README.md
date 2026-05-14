@@ -1,6 +1,8 @@
 ﻿# SquadIQ
 
-Real-time analytics platform for the PC game **Squad**. Tracks live match events, player stats, and generates AI-powered round diagnostics using GPT-4o.
+Real-time analytics platform for the PC game **Squad**. Tracks live match events, player stats, and generates AI-powered round diagnostics using Claude.
+
+**Live demo:** https://squadiq-client.onrender.com
 
 ---
 
@@ -9,15 +11,16 @@ Real-time analytics platform for the PC game **Squad**. Tracks live match events
 | Layer | Technology |
 |---|---|
 | Backend | Node.js, Express, TypeScript |
-| Real-time | Socket.io |
+| Real-time | Socket.IO |
 | Database | MongoDB + Mongoose |
-| AI | OpenAI GPT-4o |
+| AI | Anthropic Claude API |
 | Frontend | React 18, Vite, TypeScript |
 | Styling | Tailwind CSS |
-| State | Zustand + React Query |
+| State | Zustand + TanStack Query |
 | Charts | Recharts |
-| Auth | JWT (access + refresh tokens) |
-| DevOps | Docker Compose |
+| Auth | JWT (access + refresh tokens, httpOnly cookies) |
+| Deployment | Render (server + static site) + MongoDB Atlas |
+| DevOps | Docker Compose (local) |
 
 ---
 
@@ -28,26 +31,23 @@ squadiq/
 ├── server/                  # Node.js + Express backend
 │   ├── src/
 │   │   ├── config/          # env validation, DB connection
-│   │   ├── types/           # shared TypeScript types
 │   │   ├── models/          # Mongoose schemas
-│   │   ├── events/          # EventBus + EventPersister
-│   │   ├── rcon/            # Squad RCON connector + log parser
 │   │   ├── simulator/       # Demo mode event generator
-│   │   ├── socket/          # Socket.io setup + handlers
-│   │   ├── middleware/       # auth, validation, errors
+│   │   ├── socket/          # Socket.IO setup + handlers
+│   │   ├── middleware/       # auth, validation
 │   │   ├── routes/          # REST API routes
-│   │   └── services/        # business logic (stats, AI)
-│   └── docs/                # Swagger/OpenAPI
+│   │   └── services/        # AI service, stats
 │
 ├── client/                  # React frontend
 │   └── src/
-│       ├── api/             # Axios instances + API functions
-│       ├── hooks/           # useSocket, useKillFeed, etc.
+│       ├── api/             # Axios instance + API calls
+│       ├── hooks/           # useSocket, etc.
 │       ├── store/           # Zustand stores
-│       ├── components/      # Reusable UI components
+│       ├── components/      # UI components
 │       └── pages/           # Dashboard, Matches, Players
 │
-└── docker-compose.yml
+├── docker-compose.yml
+└── render.yaml              # Render deployment blueprint
 ```
 
 ---
@@ -56,16 +56,13 @@ squadiq/
 
 ### Prerequisites
 - Node.js 20+
-- MongoDB (local or Atlas)
-- OpenAI API key
+- MongoDB running locally (or Docker)
+- Anthropic API key
 
 ### 1. Install dependencies
 
 ```bash
-# Server
 cd server && npm install
-
-# Client
 cd client && npm install
 ```
 
@@ -73,23 +70,22 @@ cd client && npm install
 
 ```bash
 cp server/.env.example server/.env
-# Fill in your OPENAI_API_KEY and other values
+# Fill in ANTHROPIC_API_KEY and other values
 ```
 
 ### 3. Run in development
 
 ```bash
-# Terminal 1 — start MongoDB (or use Atlas)
-# Terminal 2 — start server
+# Terminal 1 — server
 cd server && npm run dev
 
-# Terminal 3 — start client
+# Terminal 2 — client
 cd client && npm run dev
 ```
 
 Open http://localhost:3000
 
-### 4. Run with Docker (one command)
+### 4. Run with Docker
 
 ```bash
 docker-compose up --build
@@ -99,23 +95,43 @@ docker-compose up --build
 
 ## Demo Mode
 
-With `DEMO_MODE=true` (default), the server runs a built-in simulator that generates realistic Squad game events — no real server needed.
+With `DEMO_MODE=true` (default), the server runs a built-in simulator — no real Squad server needed.
 
 The simulator:
 - Starts a match on a random Squad map/layer
-- Fires kill, revive, flag capture events every few seconds
+- Fires kill, revive, and flag capture events every few seconds
 - Counts down tickets for both teams
 - Ends the match when tickets hit 0
-- Triggers GPT-4o to generate a round diagnostic automatically
+- Triggers Claude to generate a round diagnostic automatically
 - Loops to the next match after a short cooldown
 
 To connect a real Squad server: set `DEMO_MODE=false` and fill in `RCON_HOST`, `RCON_PORT`, `RCON_PASSWORD`.
 
 ---
 
-## API Documentation
+## Deployment (Render)
 
-Swagger UI available at: http://localhost:5000/api/docs
+The repo includes a `render.yaml` Blueprint that defines both services.
+
+**Steps:**
+1. Create a [MongoDB Atlas](https://www.mongodb.com/atlas) cluster and get the connection string
+2. Render Dashboard → **New** → **Blueprint** → connect this repo
+3. Set the following env vars in the Render dashboard:
+
+**`squadiq-server`:**
+| Var | Value |
+|---|---|
+| `MONGODB_URI` | MongoDB Atlas connection string |
+| `ANTHROPIC_API_KEY` | Your Anthropic key |
+| `CLIENT_ORIGIN` | `https://squadiq-client.onrender.com` |
+| `NODE_ENV` | `production` |
+| `JWT_SECRET` | Any strong random string |
+| `JWT_REFRESH_SECRET` | Any strong random string |
+
+**`squadiq-client`:**
+| Var | Value |
+|---|---|
+| `VITE_API_URL` | `https://squadiq-server.onrender.com` |
 
 ---
 
@@ -127,17 +143,17 @@ Swagger UI available at: http://localhost:5000/api/docs
 | `event:kill` | Server → Client | Kill event with killer/victim/weapon |
 | `event:revive` | Server → Client | Revive event |
 | `event:capture` | Server → Client | Flag captured |
-| `leaderboard:update` | Server → Client | Updated leaderboard snapshot |
-| `server:status` | Server → Client | Map, tickets, player count |
+| `tickets:update` | Server → Client | Live ticket counts |
 | `match:start` | Server → Client | New match began |
 | `match:end` | Server → Client | Match ended with winner |
+| `match:snapshot` | Server → Client | Full state sync on reconnect |
 | `match:analysis_ready` | Server → Client | AI diagnostic is ready |
 
 ---
 
 ## AI Round Diagnostic
 
-After each match ends, GPT-4o automatically generates a structured diagnostic including:
+After each match ends, Claude automatically generates a structured diagnostic including:
 - Round summary
 - MVP and top medic
 - Turning point (key flag capture)
